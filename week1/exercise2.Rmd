@@ -1,0 +1,29 @@
+Loading in tidyverse
+
+```{r}
+library(tidyverse)
+```
+
+Load hg19 and hg16 into the same combined data frame
+
+```{r}
+header <- c( "chr", "start", "end", "count" )
+hg19 <- read_tsv("hg19-kc-count.bed", col_names=header )
+hg16 <- read_tsv("hg16-kc-count.bed", col_names=header)
+# combine into new dataframe 
+combined_df <- bind_rows( hg19=hg19, hg16=hg16, .id="assembly" )
+```
+
+Visualize both hg19 and hg16 onto the same line plot
+
+```{r}
+ggplot(combined_df, aes( x = start, y = count, color = assembly)) +
+  geom_line() +
+  facet_wrap(~chr, scales = "free")
+
+ggsave("exercise2.png",
+       width = 15,
+       height = 10)
+```
+
+
