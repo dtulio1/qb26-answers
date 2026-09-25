@@ -1,0 +1,4 @@
+*.fq.gz
+*.sam
+*.bam
+*.bam.bai
