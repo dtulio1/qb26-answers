@@ -36,7 +36,7 @@ bedtools intersect -F 1 -a nhek-active.bed -b nhlf-active.bed | head -1
     # NHEK active feature is larger than NHLF active feature
    
 #using bedtools intersect -f 1 -F 1
-bedtools intersect -f 1 -F 1 -a nhek-active.bed -b nhlf-active.bed | wc -l
+bedtools intersect -f 1 -F 1 -a nhek-active.bed -b nhlf-active.bed | head -1
     # chr1	1051137	1051537	1_Active_Promoter	0	.	1051137	1051537
     # both active sections are completely overlapped
 
