@@ -85,11 +85,110 @@ cat A01_09.flagstat
     - ex: grep -F -e 'chr01_27915' -e 'chr01_28323' -e 'chr01_28652' -e 'chr01_29667' ~/Data/BYxRM/BYxRM_GenoData.txt | cut -f 63
         - returned B for all
 
-# Exercise 2
+# Exercise 3
 
-## Exercise 2 Questions
+## Exercise 3 Questions
 
 **Question 3.1**
 - The last 10 columns are our samples. These are pulled from the sample name that is within each BAM file.
+
+**Question 3.2**
 - The ploidy argument matters because these yeast segregants are haploid. If it was diploid it would show two numbers as the genotype, like 0/1 instead of either just 1 or 0. You would need to run -p 2.
 
+# Exercise 4
+
+**Step 4.3 code for long format**
+- I just edited my previous ex4.py script:
+
+#!/usr/bin/env python3
+
+af_output = open("AF.txt_long", "w")
+gt_output = open("gt_long_test.txt", "w")
+
+for line in open("biallelic.vcf"):
+    # this line lists the sample names, starting at column 10
+    if line.startswith("#CHROM"):
+        fields = line.rstrip('\n').split('\t')
+        sample_ids = fields[9:]
+        continue
+
+    # skip all other header/metadata lines
+    if line.startswith('#'):
+        continue
+
+    # Remove new line character at the end of the line, sep by tab
+    fields = line.rstrip('\n').split('\t')
+    # Ignore mitochondrial chromosome
+    if fields[0] == "chrM": continue
+
+    # label the fields
+    chrom = fields[0]
+    pos = fields[1]
+    info = fields[7]
+    sample_fields = fields[9:]
+
+    # Extract allele frequency from column
+    allele_freq = info.split("AF=")[1].split(";")[0]
+
+    # Write a file to get the allele frequency for each variant
+    af_output.write(chrom + "\t" + pos + "\t" + allele_freq + "\n")
+
+    # Write a file to get the genotype of each sample at each variant
+    for sample_id, sample_field in zip(sample_ids, sample_fields):
+        genotype = sample_field.split(":")[0]
+        if genotype == "0":
+            gt_output.write(sample_id + "\t" + chrom + "\t" + pos + "\t" + "0" + "\n")
+        elif genotype == "1":
+            gt_output.write(sample_id + "\t" + chrom + "\t" + pos + "\t" + "1" + "\n")
+        # otherwise (missing genotype, ".") skip it
+
+af_output.close()
+gt_output.close()
+
+**Step 4.4 R code**
+library(ggplot2)
+
+setwd("/Users/cmdb/qb26-answers/week2/exercise4")
+
+gt <- read.table("gt_long_test.txt", header = FALSE, sep = "\t",
+                 col.names = c("SAMPLE", "CHROM", "POS", "GT"))
+
+gt_sub <- gt[gt$SAMPLE == "A01_62" & gt$CHROM == "chrII", ]
+
+gt_sub$GT <- as.factor(gt_sub$GT)
+
+ggplot(gt_sub, aes(x = POS, y = 0, color = GT)) +
+  geom_point() +
+  labs(x = "Position on chrII", y = "", color = "Genotype",
+       title = "Genotype of A01_62 along chrII")
+
+ggsave("A01_62_chrII.png")
+
+**Step 4.5 R code**
+library(ggplot2)
+
+setwd("/Users/cmdb/qb26-answers/week2/exercise4")
+
+gt <- read.table("gt_long_test.txt", header = FALSE, sep = "\t",
+                 col.names = c("SAMPLE", "CHROM", "POS", "GT"))
+
+gt$GT <- as.factor(gt$GT)
+
+ggplot(gt, aes(x = POS, y = SAMPLE, color = GT)) +
+  geom_point() +
+  facet_grid(. ~ CHROM, scales = "free_x", space = "free_x") +
+  labs(x = "Position", y = "Sample", color = "Genotype",
+       title = "Ancestry of all samples across all chromosomes")
+
+ggsave("ancestry.png", width = 14, height = 6)
+
+## Exercise 4 Questions
+
+**Question 4.1**
+- The most common allelic frequency is clustered between ~ 0.3 and ~0.6. Very few genes have very high or very low allelic frequency. The distribution is relatively uniform and symmetric.
+
+**Question 4.2**
+- I notice that it transitions from 1 to 0 back to 1 then back to 0 and then 1. This indicates that the chromosome underwent recombination (transition from wt or mutant so BY or RM)
+
+**Question 4.3**
+- Yes, the samples that looked like BY in the IGV screenshot roughly look like they belong to BY at the left end of chr1 here (the left portion is red indicating genotype of 0). The samples appear to be a pretty even distribution between parents.
