@@ -84,3 +84,12 @@ cat A01_09.flagstat
 - Yes, it appears the visual call agrees with the published genotypes.
     - ex: grep -F -e 'chr01_27915' -e 'chr01_28323' -e 'chr01_28652' -e 'chr01_29667' ~/Data/BYxRM/BYxRM_GenoData.txt | cut -f 63
         - returned B for all
+
+# Exercise 2
+
+## Exercise 2 Questions
+
+**Question 3.1**
+- The last 10 columns are our samples. These are pulled from the sample name that is within each BAM file.
+- The ploidy argument matters because these yeast segregants are haploid. If it was diploid it would show two numbers as the genotype, like 0/1 instead of either just 1 or 0. You would need to run -p 2.
+

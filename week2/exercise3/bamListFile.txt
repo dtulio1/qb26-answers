@@ -1,0 +1,10 @@
+/Users/cmdb/qb26-answers/week2/exercise1/A01_09.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_11.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_23.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_24.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_27.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_31.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_35.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_39.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_62.bam
+/Users/cmdb/qb26-answers/week2/exercise1/A01_63.bam
