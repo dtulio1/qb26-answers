@@ -7,12 +7,12 @@
 # bedtools intersect -c -a hg16-1mb.bed -b hg16-kc.bed > hg16-kc-count.bed
 
 #How many genes are in hg19?
-wc -l hg19-kc-count.bed
-    #3114
+wc -l hg19-kc.bed
+    # 80309 (80308 genes because of the header line)
 
 #How many genes are in hg19 but not in hg16?
-bedtools intersect -v -a hg19-kc-count.bed -b hg16-kc-count.bed | wc -l
-    #36
+bedtools intersect -v -a hg19-kc.bed -b hg16-kc.bed > unique_hg19-kc.bed | wc - l
+    #42737
 
 #Why are some genes in hg19 but not hg16?
     #genome assemblies improve over time, so hg19 could have resolved gaps
@@ -20,12 +20,12 @@ bedtools intersect -v -a hg19-kc-count.bed -b hg16-kc-count.bed | wc -l
 
 
 #How many genes are in hg16?
-wc -l hg16-kc-count.bed 
-    #3085
+wc -l hg16-kc.bed 
+    #21365 (21364 because of the header line)
 
 #How many genes are in hg16 but not in hg19
-bedtools intersect -v -b hg19-kc-count.bed -a hg16-kc-count.bed | wc -l
-    #7
+bedtools intersect -v -a hg16-kc.bed -b hg19-kc.bed| wc -l
+    #3458
 
 #Why are some genes in hg16 but not in hg19?
     #as an earlier iteration, hg16 could have interpetted some repeats or gaps
