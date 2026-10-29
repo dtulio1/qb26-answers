@@ -97,6 +97,7 @@ def PCA_analysis(data, times, reps, title = "", fname = None):
 
 # step 2.2
 # create a function to find and plot first 2 PCs
+# just like step 1.2 function, but don't need to transpose
 def PCA_genes(data, colors, title = "", fname = None):
     pca = PCA(random_state=42)
     pca_transform = pca.fit_transform(data)
