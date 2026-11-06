@@ -58,7 +58,7 @@ colnames(colData(kidney))
 
 # plot cells according to X_umap
 plotReducedDim(kidney, dimred = "X_umap", color_by = "cell_type" )
-ggsave("exercise1_umap.png")
+ggsave("exercise1_umap.png", width=11, height=6)
 ```
 
 - There are 29 columns in colData
@@ -140,6 +140,8 @@ colData(kidney) <- cbind( colData(kidney), df)
 ```{r}
 plotColData(kidney, y = "subsets_Stress_percent", x = "cell_type") +
   theme( axis.text.x=element_text( angle=90, hjust=1, vjust=0.5))
+
+ggsave("question5_celltype_vs_stress.png")
 ```
 - It looks like the cell types that have a higher percentage of stress gene reads is the mesangial cells, which show a distribution of about 2-7% stress genes, as well kidney cortex artery cells and kidney capillary enodthelial cells which show a large number of cells at the ~2% range.This might be the case because it appears that mesangial cells help regulate blood flow and the glomerulus, and the capillary and artery cells are important for regulating blood flow. Therefore, these 3 cell types might express immediate early stress genes in order to be able to adapt and regulate blood pressure and filtration under a variety of conditions.
 
