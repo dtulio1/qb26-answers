@@ -1,0 +1,234 @@
+---
+title: "week 8 assignment"
+output: html_notebook
+---
+# Exercise 1: Load data
+## Step 1: Load packages
+```{r}
+#BiocManager::install("zellkonverter")
+library("zellkonverter")
+library("HDF5Array")
+library("scuttle")
+library("scran")
+library("scater")
+library("ggplot2")
+library("clusterProfiler")
+#BiocManager::install("org.Mm.eg.db")
+library("org.Mm.eg.db")
+```
+
+## Step 2: Load and inspect data
+```{r}
+kidney <- readH5AD(file = "kidney_10x.h5ad", reader = c("R"))
+
+assay( kidney, "X", withDimnames=FALSE ) <- as( H5SparseMatrix( "kidney_10x.h5ad", "raw/X" ), "dgCMatrix" )
+assayNames(kidney) <- "counts"
+
+# use gene symbols instead of Ensembl IDs
+rownames(kidney) <- rowData(kidney)$feature_name
+
+# Normalize counts
+kidney <- logNormCounts(kidney)
+kidney
+```
+## Questions:
+*Question 1*
+```{r}
+# genes are rows
+nrow(kidney)
+
+# cells are columns
+ncol(kidney)
+
+# dimension reductions in this dataset
+reducedDimNames(kidney)
+```
+
+- There are 17943 genes that are quantitated. 
+- There are 21647 cells in this dataset
+- The dimension reduction dataset are present are "X_pca"  "X_tsne" "X_umap".
+
+*Question 2* 
+```{r}
+# number of columns in colData
+ncol(colData(kidney))
+
+# column names
+colnames(colData(kidney))
+
+# plot cells according to X_umap
+plotReducedDim(kidney, dimred = "X_umap", color_by = "cell_type" )
+ggsave("exercise1_umap.png")
+```
+
+- There are 29 columns in colData
+- The three column names reported by colnames() that seems most interesting is "cell_type", "age", and "donor_id". Cell type is important because it will help us look at gene expression trends acros cell types. Ages is also important because the intro said this data is from mice from across their life span, so looking at how gene expression and cell types change across age could be interesting. Additionally, donor ID is important because it will help us see if there are certain trends in one individual.
+
+# Exercise 2: Explore data
+## Step 1: Explore gene-level statistics
+```{r}
+# Step 1.1 Sum the expression of each gene across all cells
+genecounts <- rowSums(counts(kidney))
+```
+
+*Question 3*: 
+```{r}
+# to find the mean and median
+summary(genecounts)
+
+# find the 3 genes with the highest expression
+head(sort(genecounts, decreasing = TRUE), 3)
+```
+
+The mean is 8349 and the median is 1212 according to summary(). The three genes with the highest expression after using sort() are Malat1, Gpx3, and Kap. These gene names stand for:
+1. Malat 1: Metastasis Associated Lung Adenocarcinoma Transcript 1
+2. Gpx3: glutathione peroxidase 3
+3. Kap: kidney androgen-regulated protein
+
+## Step 2: Explore cell-level statistics
+*Question 4a*:
+```{r}
+# create a vector named cellcounts
+cellcounts <- colSums(counts(kidney))
+
+# create a histogram
+hist(cellcounts)
+
+# mean number of counts per cell
+mean(cellcounts)
+```
+
+- The mean number of counts per cell is 6920.692.
+- I would interpret the cells with much higher total counts as higher cells that are highly transcriptionally active, for example, cells with a high metabolic need might be very transcriptionally active. Alternatively, cells with much higher total counts could also be a doublet, so two cells were captured in the same droplet.
+
+*Question 4b*:
+```{r}
+# create a vector named celldetected
+celldetected <- colSums(counts(kidney) > 0)
+hist(celldetected)
+
+# mean number of genes detected per cell
+mean(celldetected)
+
+# fraction of all genes
+mean(celldetected) / nrow(kidney)
+```
+
+- The mean number of genes detected per cell is 1981.821.
+- The fraction of total genes is 0.1104509, so the mean number of genes detected per cell represents ~11% of the total number of genes.
+
+## Step 3: Explore stress gene reads
+```{r}
+# create a vector names stress
+stress <- c( "Fos", "Fosb", "Jun", "Junb", "Egr1", "Atf3", "Ier2", "Hspa1a", "Hspa1b" )
+
+# confirm that all of these genes are present
+stress %in% rownames(kidney)
+
+# create a df named df using perCellQCMetrics
+df <- perCellQCMetrics(kidney, subsets=list(Stress=stress))
+
+# sanity check
+summary(as.data.frame(df))
+  # mean of sum is 6921 which is approx equal to mean(cellcounts) from 4a (6920.692)
+  # mean of detected is 1982 which is approx equal to mean(celldetected) from 4b (1981.821)
+
+# add metrics to cell metadata
+colData(kidney) <- cbind( colData(kidney), df)
+```
+*Question 5*: Visualize percent of reads from stress genes
+```{r}
+plotColData(kidney, y = "subsets_Stress_percent", x = "cell_type") +
+  theme( axis.text.x=element_text( angle=90, hjust=1, vjust=0.5))
+```
+- It looks like the cell types that have a higher percentage of stress gene reads is the mesangial cells, which show a distribution of about 2-7% stress genes, as well kidney cortex artery cells and kidney capillary enodthelial cells which show a large number of cells at the ~2% range.This might be the case because it appears that mesangial cells help regulate blood flow and the glomerulus, and the capillary and artery cells are important for regulating blood flow. Therefore, these 3 cell types might express immediate early stress genes in order to be able to adapt and regulate blood pressure and filtration under a variety of conditions.
+
+
+# Exercise 3: Identify marker genes
+```{r}
+# Identify marker genes for every cell type compared with all other cells
+
+# create a list named marker.info that contains the pairwise comparisons between all cell types
+marker.info <- scoreMarkers( kidney, colData(kidney)$cell_type)
+```
+
+## Step 1: analyze the proximal convoluted tubule
+```{r}
+# identify top marker genes
+chosen <- marker.info[["kidney proximal convoluted tubule epithelial cell"]]
+ordered <- chosen[order(chosen$mean.AUC, decreasing=TRUE),]
+head(ordered[,1:4])
+```
+*Question 6a*: Evalutate top marker genes
+- The 6 top marker genes in the proximal convoluted tubule are: 
+1. CD79A
+2. CD79B
+3. CD74
+4. MS4A1
+5. CD37 
+6. HLA-DRA
+```{r}
+# plot the expression of top marker gene across cell types
+top_marker_gene <- rownames(ordered)[1]
+plotExpression(kidney, features = top_marker_gene, x = "cell_type" ) +
+  theme( axis.text.x=element_text( angle=90, hjust=1, vjust=0.5 ) )
+
+# save this plot to submit
+ggsave("exercise3_question6a_top_marker_gene.png")
+```
+
+*Question 6b*: Set gene analysis
+```{r}
+# create a vector, goi, that contains the names of the top 200 genes
+goi <- rownames(ordered)[1:200]
+
+# test for enriched Gene Ontology
+ego <- enrichGO( goi, OrgDb=org.Mm.eg.db, keyType="SYMBOL", ont="BP", universe=rownames(kidney) )
+head( ego )
+dotplot( ego )
+
+ggsave("exercise3_question6b_GOterms.png")
+
+# top 3 GO terms
+head(ego, 3)
+```
+- The top 3 GO terms (that have the lowest padj) are for:
+1. alpha amino acid metabolic proccess
+2. small molecule catabolic process
+3. amino acid metabolic process
+- This suggests that the proximal convoluted tubulue specializes in amino acid metabolism.
+
+## Step 2: Analayze the thick ascending limb
+Repeat the analysis for the thick ascending limb of the loop of henle
+```{r}
+
+# identify top marker genes
+chosen_thick_limb <- marker.info[["kidney loop of Henle thick ascending limb epithelial cell"]]
+ordered_thick_limb <- chosen_thick_limb[order(chosen_thick_limb$mean.AUC, decreasing=TRUE),]
+head(ordered_thick_limb[,1:4])
+
+# create a vector, goi, that contains the names of the top 6 genes
+goi <- rownames(ordered_thick_limb)[1:6]
+
+```
+
+```{r}
+# plot the expression of top 6 marker gene across cell types
+plotExpression(kidney, features = goi, x = "cell_type" ) +
+  theme( axis.text.x=element_text( angle=90, hjust=1, vjust=0.5 ) )
+
+ggsave("exercise3_question7.png", width = 14, height = 14)
+```
+- The gene expression of these 6 top genes in the kidney loop of Henle ascending limb epithelial cell very closesly matches our tissue of interest, the kidney loop of Henle thick ascending limb epithelial cell. Looking at the labeles, this could be due to the fact they are both "ascending limb epithelial cells" in the loop of Henle. It's possible that the thick limb is just a subset, and the "kidney loop of Henle ascending limb epithelial cell" is the braoder category.
+- The marker that looks most specific for the thick ascending limb is SLC12A1 seems to be the most specific. It is only high in the kidney loop of Henle ascending limb epithelial cell and the corresponding thick limb. After looking it up in google, SLC12A1 "encodes NKCC2 (sodium-potassium-2chloride cotransporter 2), a kidney-specific membrane protein essential for salt reabsorption and fluid balance" and this is primarily targeted by the loop diuretic drug class. This drug class binds to this transporter to inhibit function.
+```{r}
+# run enrichGO() on the top 200 marker genes
+goi200 <- rownames(ordered_thick_limb)[1:200]
+
+ego_thick_limb <- enrichGO(goi200, OrgDb = org.Mm.eg.db, keyType = "SYMBOL", ont = "BP", universe = rownames(kidney))
+
+dotplot(ego_thick_limb)
+
+head(ego_thick_limb)
+```
+- The top GO terms are oxidative phosphorylation, proton motive force-driven ATP synthesis, aerobic respiration, cellular respiration, energy derivation by oxidation of organic compounds, and 	proton motive force-driven mitochondrial ATP synthesis. This cell type might need it because these GO terms are all about mitochondrial energy production. If the thick limb cells help to pump out salt via the transporter encoded by SLC12A1, this would require a lot of ATP, therefore the cells need lots of mitochondria and must carry out lots of respiration.
